@@ -5,16 +5,16 @@
     python explore.py taxonomy     # just the taxonomy
     python explore.py matrix       # just the cross-family property matrix
     python explore.py specs        # verify each generator meets its guarantee
-    python explore.py speculative  # just the speculative feasibility probes
+    python explore.py frontier     # THE HEADLINE: which properties can't coexist
+    python explore.py speculative  # the speculative feasibility probes
     python explore.py combine      # combine generators into new-purpose tables
     python explore.py literature   # survey-grounded extensions, made runnable
 
-The story, in order: (1) lay every generator from every lineage side by side,
-(2) confirm each meets the property it promises, (3) run the broadly-applicable
-properties against *all* of them to surface cross-family relationships,
-(4) flip the question around -- pick a property first and ask what can be built,
-(5) combine generators and watch which properties are created or destroyed,
-then (6) fold in methods excavated from a literature survey, each made runnable.
+The story leads with (1) the property-incompatibility frontier -- the actual
+contribution -- then shows the instrument that finds it: (2) the taxonomy,
+(3) the self-verifying spec check, (4) the cross-family property matrix,
+(5) property-first feasibility probes, (6) combining generators and watching
+which properties survive, and (7) methods folded in from a literature survey.
 """
 
 from __future__ import annotations
@@ -26,13 +26,14 @@ from pgdmc.generators.speculative import run_all_explorations
 from pgdmc.report import (
     render_combine,
     render_feasibility,
+    render_frontier,
     render_matrix,
     render_spec_checks,
     render_survey,
     render_taxonomy,
 )
 
-SECTIONS = ("taxonomy", "specs", "matrix", "speculative", "combine", "literature")
+SECTIONS = ("frontier", "taxonomy", "specs", "matrix", "speculative", "combine", "literature")
 
 
 def _banner(title: str) -> str:
@@ -49,33 +50,39 @@ def main(argv: list[str]) -> int:
     registry = build_registry()
     catalog = build_catalog()
 
+    if which in ("all", "frontier"):
+        print(_banner("1. THE PROPERTY-INCOMPATIBILITY FRONTIER (the headline)"))
+        print("The contribution: which property guarantees provably cannot coexist.")
+        print("The remaining sections are the instrument used to find this boundary.\n")
+        print(render_frontier())
+
     if which in ("all", "taxonomy"):
-        print(_banner("1. TAXONOMY"))
+        print(_banner("2. TAXONOMY"))
         print(render_taxonomy(registry))
 
     if which in ("all", "specs"):
-        print(_banner("2. SPEC VERIFICATION"))
+        print(_banner("3. SPEC VERIFICATION"))
         print(render_spec_checks(verify_specs(catalog)))
 
     if which in ("all", "matrix"):
-        print(_banner("3. CROSS-FAMILY PROPERTY MATRIX"))
+        print(_banner("4. CROSS-FAMILY PROPERTY MATRIX"))
         print("Every broadly-applicable property run against every table.")
         print("Note how the CRC table and AES S-box -- both 256-entry byte")
         print("bijections -- sit at opposite ends of nonlinearity.\n")
         print(render_matrix(property_matrix(catalog)))
 
     if which in ("all", "speculative"):
-        print(_banner("4. SPECULATIVE CONSTRUCTIONS"))
+        print(_banner("5. SPECULATIVE CONSTRUCTIONS"))
         print(render_feasibility(run_all_explorations()))
 
     if which in ("all", "combine"):
-        print(_banner("5. COMBINING GENERATORS"))
+        print(_banner("6. COMBINING GENERATORS"))
         print("Two generators in, one new-purpose table out -- and a record of")
         print("which property each combinator creates, preserves, or destroys.\n")
         print(render_combine())
 
     if which in ("all", "literature"):
-        print(_banner("6. SURVEY-GROUNDED EXTENSIONS"))
+        print(_banner("7. SURVEY-GROUNDED EXTENSIONS"))
         print("Methods drawn from a literature review, made runnable and verified.\n")
         print(render_survey())
 

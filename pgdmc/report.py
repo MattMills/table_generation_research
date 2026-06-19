@@ -178,6 +178,55 @@ def render_combine() -> str:
     return "\n".join(out)
 
 
+def render_frontier(ci_trials: int = 2000) -> str:
+    """The property-incompatibility frontier -- impossibilities first."""
+    from .frontier import grid, run_frontier
+
+    results = run_frontier(ci_trials)
+    buckets = {"INCOMPATIBLE": [], "TRADEOFF": [], "COMPATIBLE": []}
+    for r in results:
+        buckets[r.verdict].append(r)
+
+    out = ["THE PROPERTY-INCOMPATIBILITY FRONTIER", ""]
+    out.append("Which property guarantees provably cannot coexist? This is the")
+    out.append("contribution; the catalog is the instrument used to find the boundary.")
+    out.append("")
+
+    titles = {
+        "INCOMPATIBLE": "PROVABLY CANNOT COEXIST",
+        "TRADEOFF": "COEXIST ONLY UNDER A QUANTITATIVE BOUND",
+        "COMPATIBLE": "COEXIST (sharp positive witnesses)",
+    }
+    for verdict in ("INCOMPATIBLE", "TRADEOFF", "COMPATIBLE"):
+        out.append(f"## {titles[verdict]}")
+        for r in buckets[verdict]:
+            out.append(f"  {r.prop_a}  X  {r.prop_b}")
+            out.append(f"      why: {r.reason}")
+            out.append(f"      witness: {r.witness}")
+            for e in r.evidence:
+                out.append(f"        - {e}")
+        out.append("")
+
+    # compact symmetric grid
+    props, cells = grid()
+    short = {p: p[:9] for p in props}
+    w = max(9, max(len(short[p]) for p in props))
+    out.append("Compatibility grid (ok=coexist, x=impossible, ~=bounded, ·=n/a):")
+    header = " " * w + " | " + " ".join(f"{short[p]:>{w}}" for p in props)
+    out.append(header)
+    out.append("-" * len(header))
+    for a in props:
+        row = []
+        for b in props:
+            if a == b:
+                row.append("-")
+            else:
+                sym = cells.get((a, b)) or cells.get((b, a)) or "·"
+                row.append(sym)
+        out.append(f"{short[a]:>{w}} | " + " ".join(f"{c:>{w}}" for c in row))
+    return "\n".join(out)
+
+
 def render_survey() -> str:
     """Survey-grounded extensions: validated, extended, or newly added methods."""
     from .survey import run_survey_extensions
