@@ -6,11 +6,13 @@
     python explore.py matrix       # just the cross-family property matrix
     python explore.py specs        # verify each generator meets its guarantee
     python explore.py speculative  # just the speculative feasibility probes
+    python explore.py combine      # combine generators into new-purpose tables
 
 The story, in order: (1) lay every generator from every lineage side by side,
 (2) confirm each meets the property it promises, (3) run the broadly-applicable
-properties against *all* of them to surface cross-family relationships, then
-(4) flip the question around -- pick a property first and ask what can be built.
+properties against *all* of them to surface cross-family relationships,
+(4) flip the question around -- pick a property first and ask what can be built,
+then (5) combine generators and watch which properties are created or destroyed.
 """
 
 from __future__ import annotations
@@ -20,13 +22,14 @@ import sys
 from pgdmc.catalog import build_catalog, build_registry, property_matrix, verify_specs
 from pgdmc.generators.speculative import run_all_explorations
 from pgdmc.report import (
+    render_combine,
     render_feasibility,
     render_matrix,
     render_spec_checks,
     render_taxonomy,
 )
 
-SECTIONS = ("taxonomy", "specs", "matrix", "speculative")
+SECTIONS = ("taxonomy", "specs", "matrix", "speculative", "combine")
 
 
 def _banner(title: str) -> str:
@@ -61,6 +64,12 @@ def main(argv: list[str]) -> int:
     if which in ("all", "speculative"):
         print(_banner("4. SPECULATIVE CONSTRUCTIONS"))
         print(render_feasibility(run_all_explorations()))
+
+    if which in ("all", "combine"):
+        print(_banner("5. COMBINING GENERATORS"))
+        print("Two generators in, one new-purpose table out -- and a record of")
+        print("which property each combinator creates, preserves, or destroys.\n")
+        print(render_combine())
 
     return 0
 

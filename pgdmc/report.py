@@ -117,3 +117,62 @@ def render_feasibility(reports: List[FeasibilityReport]) -> str:
             out.append(f"    takeaway: {r.takeaway}")
         out.append("")
     return "\n".join(out)
+
+
+def render_combine() -> str:
+    """Combining generators: new tables, new purposes, and a property algebra."""
+    from .combinators import (
+        build_combinations,
+        composition_findings,
+        feistel_mixing_progression,
+    )
+    from .combinatorial_combinations import (
+        build_difference_set_design,
+        build_graeco_latin,
+        build_mols_orthogonal_array,
+    )
+    from .properties import GraecoLatinOrthogonal, OrthogonalArrayProp, TwoDesign
+
+    out = ["COMBINING GENERATORS (two generators -> a new alternate-purpose table)", ""]
+
+    out.append("A) General combinator algebra (compose / Feistel / direct-sum / XOR)")
+    out.append("")
+    for c in build_combinations():
+        out.append(f"  {c.combinator.upper():11s} {c.name}")
+        out.append(f"      from: {' + '.join(c.parents)}")
+        metric_str = "  ".join(f"{k}={v}" for k, v in c.metrics.items())
+        out.append(f"      result: {metric_str}")
+        out.append(f"      purpose: {c.new_purpose}")
+        out.append(f"      effect:  {c.effect}")
+        out.append("")
+
+    out.append("  Property algebra of composition (computed live):")
+    for line in composition_findings():
+        out.append(f"    {line}")
+    out.append("")
+    out.append("  Feistel diffusion vs rounds (a function -> a strong bijection):")
+    out.extend(feistel_mixing_progression())
+    out.append("")
+
+    out.append("B) Combining combinatorial generators into higher structures")
+    out.append("")
+    gl = build_graeco_latin(5)
+    oa = build_mols_orthogonal_array(5, 3)
+    design = build_difference_set_design(7)
+    rows = [
+        ("Latin square x Latin square -> Graeco-Latin", gl,
+         GraecoLatinOrthogonal().check(gl)),
+        ("k MOLS -> orthogonal array (strength 2)", oa,
+         OrthogonalArrayProp().check(oa)),
+        ("difference set + cyclic action -> 2-design", design,
+         TwoDesign().check(design)),
+    ]
+    for label, table, result in rows:
+        status = result.status.value
+        out.append(f"  [{status}] {label}")
+        out.append(f"          -> {table.name}: {result.detail}")
+    out.append("")
+    out.append("  The orthogonal array is literally a stack of Latin squares, and the")
+    out.append("  Fano plane is a difference set developed under Z_7 -- combinatorial")
+    out.append("  'generators' that are themselves combinations.")
+    return "\n".join(out)

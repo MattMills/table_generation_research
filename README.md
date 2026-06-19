@@ -12,7 +12,8 @@ promise, lays them side by side on common axes, and then flips the question
 around to ask what *new* tables a property-first view can produce.
 
 The seed conversation is preserved in [`docs/conversation.md`](docs/conversation.md).
-A longer written treatment of the taxonomy is in [`docs/taxonomy.md`](docs/taxonomy.md).
+A longer written treatment of the taxonomy is in [`docs/taxonomy.md`](docs/taxonomy.md),
+and the study of *combining* generators is in [`docs/combinations.md`](docs/combinations.md).
 
 ## The idea in one paragraph
 
@@ -58,13 +59,14 @@ every run (31/31 verified), so the catalog is self-testing.
 ## Run it
 
 ```bash
-python explore.py             # the whole story, in four acts
+python explore.py             # the whole story, in five acts
 python explore.py taxonomy    # the generators, grouped and annotated by axis
 python explore.py specs       # confirm each generator meets its own guarantee
 python explore.py matrix      # the cross-family property matrix (the payoff)
 python explore.py speculative # property-first feasibility probes
+python explore.py combine     # combine generators into new-purpose tables
 
-python -m unittest discover -s tests   # 27 tests, asserting known constants
+python -m unittest discover -s tests   # 39 tests, asserting known constants
 ```
 
 ## The payoff: one matrix, opposite ends
@@ -106,6 +108,31 @@ so precisely is the point:
 Knowing which property *combinations* are unreachable is the "fundamental
 limits" half of the proposed research field.
 
+## Combining generators (the generative half)
+
+The most direct evidence for "reframing surfaces new methods" is that the famous
+tables are *already* combinations. `python explore.py combine` reproduces and
+generalizes that:
+
+> **AES S-box = (affine map) ∘ (GF(2⁸) inverse)** — verified byte-for-byte.
+
+A small algebra of combinators (compose, Feistel, direct-sum, XOR) yields a
+**property algebra of combination** — which guarantees survive, which are
+created, which are destroyed:
+
+| Combinator | Inputs | Effect | Witness |
+|---|---|---|---|
+| compose | affine ∘ nonlinear | nonlinearity is **free** | GF inverse NL 112 → S-box NL 112 |
+| compose | nonlinear ∘ nonlinear | can **destroy** it | x⁷∘x⁷ = x⁴ (linear): NL 4 → 0 |
+| Feistel | any (even lossy) function | **creates** bijectivity | bijection from squaring-mod-16 |
+| direct-sum | two narrow S-boxes | **degrades** differential uniformity | DU 4 → 64 |
+| XOR | permutation ⊕ permutation | **destroys** bijectivity | AES ⊕ Gray ≠ permutation |
+
+And the combinatorial family turns out to be combinations all the way down:
+two orthogonal **Latin squares → a Graeco-Latin square**; *k* MOLS → an
+**orthogonal array** of strength 2; a **difference set developed under Z₇ → the
+Fano plane** (the 2-(7,3,1) design). See [`docs/combinations.md`](docs/combinations.md).
+
 ## Layout
 
 ```
@@ -113,13 +140,15 @@ pgdmc/
   core.py          Table / Generator / Property / Registry abstractions
   bitmath.py       Walsh-Hadamard, Mobius/ANF, popcount, GF(2) bit utilities
   gf.py            GF(2^n) arithmetic (the shared "polynomial machinery")
-  properties.py    ~20 runtime-checkable property verifiers
+  properties.py    ~22 runtime-checkable property verifiers
   generators/      one module per family (+ speculative.py for the probes)
+  combinators.py   compose / Feistel / direct-sum / XOR / whiten + property algebra
+  combinatorial_combinations.py   MOLS -> Graeco-Latin / orthogonal array; difference set -> design
   catalog.py       assemble everything; build the property matrix; verify specs
-  report.py        text rendering of taxonomy / matrix / probes
+  report.py        text rendering of taxonomy / matrix / probes / combinations
 explore.py         CLI entry point
-tests/             unittest suite asserting known constants (AES, bent, APN, ...)
-docs/              the seed conversation and the taxonomy writeup
+tests/             unittest suite asserting known constants (AES, bent, APN, Fano, ...)
+docs/              the seed conversation, the taxonomy, and the combinations writeup
 ```
 
 ## Scope and honesty

@@ -40,6 +40,7 @@ class Family(str, Enum):
     HASHING = "hashing"
     ERROR_CORRECTION = "error-correction"
     SPECULATIVE = "speculative"
+    COMPOSITE = "composite"  # produced by combining two or more generators
 
 
 class FamilySize(str, Enum):

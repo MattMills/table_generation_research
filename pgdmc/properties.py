@@ -389,6 +389,47 @@ class OrthogonalArrayProp(Property):
                               f"strength {spec['strength']}")
 
 
+class GraecoLatinOrthogonal(Property):
+    name = "graeco-latin"
+    description = "Two superimposed Latin squares show every ordered pair once."
+
+    def applicable(self, table: Table) -> bool:
+        return "graeco" in table.meta
+
+    def check(self, table: Table) -> PropertyResult:
+        a, b = table.meta["graeco"]
+        n = len(a)
+        pairs = {(a[r][c], b[r][c]) for r in range(n) for c in range(n)}
+        ok = len(pairs) == n * n
+        return PropertyResult(Status.PASS if ok else Status.FAIL, len(pairs),
+                              f"{len(pairs)}/{n * n} distinct symbol pairs")
+
+
+class TwoDesign(Property):
+    name = "two-design"
+    description = "Every pair of points lies in exactly lambda blocks (a 2-design)."
+
+    def applicable(self, table: Table) -> bool:
+        return "design" in table.meta
+
+    def check(self, table: Table) -> PropertyResult:
+        blocks = table.meta["design"]["blocks"]
+        v = table.meta["design"]["points"]
+        sizes = {len(b) for b in blocks}
+        if len(sizes) != 1:
+            return PropertyResult(Status.FAIL, None, "blocks not equireplicate")
+        lambdas = set()
+        for i in range(v):
+            for j in range(i + 1, v):
+                count = sum(1 for b in blocks if i in b and j in b)
+                lambdas.add(count)
+        ok = len(lambdas) == 1
+        lam = next(iter(lambdas)) if ok else None
+        k = next(iter(sizes))
+        detail = f"2-({v},{k},{lam}) design" if ok else "not a 2-design"
+        return PropertyResult(Status.PASS if ok else Status.FAIL, lam, detail)
+
+
 class DistinctEntries(Property):
     name = "distinct-keys"
     description = "All entries in the random ensemble are distinct (no collisions)."
@@ -482,6 +523,8 @@ SPECIALISED_PROPERTIES: List[Property] = [
     UniformDifferences(),
     Costas(),
     OrthogonalArrayProp(),
+    GraecoLatinOrthogonal(),
+    TwoDesign(),
     DistinctEntries(),
     BitBalance(),
     RootOfUnity(),
