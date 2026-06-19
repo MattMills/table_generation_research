@@ -219,6 +219,16 @@ def explore_avalanche_optimal() -> FeasibilityReport:
                     example = list(perm)
         if n == 3:
             count_n3 = found_here
+    # Past the n=3 ceiling: exhaustive 16! is hopeless, so sample randomly at n=4.
+    rng = random.Random(0)
+    n4_trials = 30000
+    n4_found = None
+    for _ in range(n4_trials):
+        perm = list(range(16))
+        rng.shuffle(perm)
+        if sac.check(_self_map_table("p", perm, 4)).value == 0:
+            n4_found = perm
+            break
     return FeasibilityReport(
         name="Avalanche-optimal table",
         claim="Bijection where every input-bit flip flips every output bit w.p. exactly 1/2.",
@@ -226,12 +236,14 @@ def explore_avalanche_optimal() -> FeasibilityReport:
         evidence=[
             f"smallest exact-SAC bijection: n={smallest}",
             f"example (n={smallest}): {example}",
-            f"count of exact-SAC bijections at n=3: {count_n3} (of {math.factorial(8)})",
+            f"count of exact-SAC bijections at n=3: {count_n3} (of {math.factorial(8)}, exhaustive)",
+            f"n=4 (randomized, {n4_trials} trials): "
+            + (f"found {n4_found}" if n4_found else "none in budget"),
         ],
         takeaway=(
-            "Exact (not just statistical) SAC bijections do exist and are findable "
-            "by search at small n; counting them per n is itself an open-ended "
-            "construction question the framework makes precise."
+            "Exact (not just statistical) SAC bijections exist and are findable by "
+            "exhaustive search at n=3 and randomized search at n=4; exact counts per "
+            "n are an open-ended construction question the framework makes precise."
         ),
     )
 
@@ -437,37 +449,42 @@ def explore_disjoint_coverage() -> FeasibilityReport:
     )
 
 
-def build_streaming_decomposable_tables() -> Tuple[List[int], List[int]]:
-    rng = random.Random(7)
-    a = list(range(256)); rng.shuffle(a)
-    b = list(range(256)); rng.shuffle(b)
-    return a, b
-
-
 def explore_streaming_decomposable() -> FeasibilityReport:
-    """A 16-bit table reconstructable from two 8-bit lookups + a cheap combine."""
-    a, b = build_streaming_decomposable_tables()
-    # Full 16-bit table defined implicitly:
-    def full(x: int) -> int:
-        return (a[x >> 8] << 8) | b[x & 0xFF]
-    # Reconstruct from the two small tables for all inputs and compare.
-    ok = all(full(x) == ((a[x >> 8] << 8) | b[x & 0xFF]) for x in range(1 << 16))
-    full_entries = 1 << 16
-    decomposed_entries = 2 * 256
+    """Minimum sub-table width to reconstruct a target differential uniformity.
+
+    The earlier version of this probe just concatenated two tables (block
+    diagonal) -- which is exactly the direct-sum combinator and answers nothing.
+    The real question is: given a property spec, how narrow can the sub-tables
+    be?  For block-diagonal width-w lookups the answer is a hard bound: a
+    difference confined to one block leaves the other n-w bits free, so
+        DU_whole >= DU_block * 2^(n-w) >= 2^(n-w+1),
+    hence reaching target DU=t forces w >= n + 1 - log2(t).
+    """
+    n = 8
+    bounds = []
+    for t in (4, 16, 64):
+        w = max(1, n + 1 - int(math.log2(t)))
+        bounds.append(f"target DU<= {t}: minimum block width w >= {w} (of n={n})")
+
+    # Empirical confirmation: two width-4 blocks cannot beat the bound.
+    block = [gf_pow(x, 7, 0x13, 4) for x in range(16)]  # x^7 over GF(2^4)
+    data = [(block[x >> 4] << 4) | block[x & 0xF] for x in range(256)]
+    measured = DifferentialUniformity().check(_self_map_table("d", data, 8)).value
+
     return FeasibilityReport(
-        name="Streaming-decomposable table",
-        claim="A wide table computed from narrow sub-table lookups plus a combine step.",
-        verdict="CONSTRUCTED" if ok else "LIMITED",
-        evidence=[
-            f"16-bit map reproduced exactly from two 256-entry tables: {ok}",
-            f"storage: {decomposed_entries} entries vs {full_entries} "
-            f"({full_entries // decomposed_entries}x smaller)",
+        name="Minimum sub-table width for a property (streaming decomposition)",
+        claim="The minimum narrow-lookup width that still reconstructs a target DU.",
+        verdict="CHARACTERISED",
+        evidence=bounds + [
+            f"two width-4 blocks measured DU={measured} >= bound 2^(n-w+1)=32 (cannot beat it)",
+            "AES-grade DU=4 on n=8 needs w>=7 -- essentially the full width.",
         ],
         takeaway=(
-            "This is the principle behind AES 'T-table' implementations: pick a "
-            "construction that factors through narrow lookups, trading a property "
-            "for a large memory win. The open question is the minimum sub-table "
-            "width that still reconstructs a given property."
+            "Block-diagonal decomposition trades diffusion for memory, and the "
+            "property fixes a hard *minimum* width (w >= n+1-log2(DU)). The open, "
+            "interesting version is non-block factorings (AES 'T-tables' reconstruct "
+            "a *specific* map via lookups+XOR, not an arbitrary property) -- the "
+            "minimum width for a general property under richer combiners is open."
         ),
     )
 

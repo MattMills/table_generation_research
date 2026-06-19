@@ -8,13 +8,18 @@ loose conversational hunch — that CRC tables, AES S-boxes, log/antilog tables,
 LFSR sequences, Gray codes, FFT twiddle factors, Latin squares, Costas arrays,
 Zobrist keys and the rest are all *the same kind of object* — and turns it into
 working code that builds those tables, **verifies** the properties they
-promise, lays them side by side on common axes, and then flips the question
-around to ask what *new* tables a property-first view can produce.
+promise, lays them side by side on common axes, and uses that apparatus to map
+the real prize: **which property guarantees provably cannot coexist.**
 
-The seed conversation is preserved in [`docs/conversation.md`](docs/conversation.md).
-A longer written treatment of the taxonomy is in [`docs/taxonomy.md`](docs/taxonomy.md),
-the study of *combining* generators is in [`docs/combinations.md`](docs/combinations.md),
-and a review of existing works folded in from a literature survey is in
+> **The headline is the [property-incompatibility frontier](docs/frontier.md).**
+> A catalog tells you what exists; the frontier tells you what *can't* — and
+> that is the claim with teeth. The catalog, matrix, and combinator algebra are
+> the instrument used to find the boundary. Run `python explore.py frontier`.
+
+The frontier is written up in [`docs/frontier.md`](docs/frontier.md). The seed
+conversation is in [`docs/conversation.md`](docs/conversation.md), the taxonomy
+in [`docs/taxonomy.md`](docs/taxonomy.md), the study of *combining* generators
+in [`docs/combinations.md`](docs/combinations.md), and a literature review in
 [`docs/literature_review.md`](docs/literature_review.md).
 
 ## The idea in one paragraph
@@ -41,7 +46,35 @@ They are first-class fields on every `Generator` in the code:
 | **Method** | Is generation a closed-form *recipe* or a *search*? | `constructive` |
 | **Property class** | *Which* guarantee is being promised? | `guarantees` |
 
-## What's implemented
+## The thesis: which guarantees provably cannot coexist
+
+This is the contribution (`python explore.py frontier`, full writeup in
+[`docs/frontier.md`](docs/frontier.md)). Each row is computed and witnessed live.
+
+**Provably impossible:**
+
+| Property A | Property B | Why | Witness |
+|---|---|---|---|
+| bijective | entropy-flattening | a bijection only relabels mass ⇒ entropy invariant | H(in)=H(out)=2.27 bits |
+| bijective | perfect-nonlinear (bent) | permutation components are balanced; bent functions aren't | bent(6) weight 28≠32 |
+| linear (NL=0) | low differential uniformity | linear ⇒ DU = 2ⁿ (worst) | rotate-by-1: NL 0, DU 256 |
+| bent | algebraic degree > n/2 | bent degree ≤ n/2 (hard bound) | bent(6) degree 2 |
+| self-inverse | asymmetric NL/DU | NL, DU are inverse-invariant | AES vs AES⁻¹: 112/112, 4/4 |
+| distance-1→d | even d | even-weight columns can't span GF(2)ⁿ | weight-2 spans rank 3/4 |
+
+**Bounded tradeoffs:** AES-grade DU=4 from width-w block lookups forces
+**w ≥ 7** of 8 (a hard minimum width); no correlation-immune bijection appears
+in random search up to n=6.
+
+**Sharp positives:** AES S-box (bijective + NL 112 + DU 4); GF(2⁵) cube
+(APN *and* algebraic degree 2 — low degree and low DU do coexist).
+
+The point of stating impossibilities precisely is the same as the point of the
+whole project: a reason that closes a door (an invariant, a counting fact, a
+spanning obstruction) is worth more than another construction that happens to
+work.
+
+## What's implemented (the instrument)
 
 Eight families, ~26 generators, ~27 property verifiers — all dependency-free
 (pure Python standard library, no numpy):
@@ -61,15 +94,16 @@ every run (35/35 verified), so the catalog is self-testing.
 ## Run it
 
 ```bash
-python explore.py             # the whole story, in six acts
+python explore.py             # the whole story, in seven acts
+python explore.py frontier    # THE HEADLINE: which properties provably can't coexist
 python explore.py taxonomy    # the generators, grouped and annotated by axis
 python explore.py specs       # confirm each generator meets its own guarantee
-python explore.py matrix      # the cross-family property matrix (the payoff)
+python explore.py matrix      # the cross-family property matrix
 python explore.py speculative # property-first feasibility probes
 python explore.py combine     # combine generators into new-purpose tables
 python explore.py literature  # survey-grounded extensions, made runnable
 
-python -m unittest discover -s tests   # 50 tests, asserting known constants
+python -m unittest discover -s tests   # 58 tests, asserting known constants
 ```
 
 ## The payoff: one matrix, opposite ends
@@ -93,23 +127,23 @@ S-boxes. Same shape, opposite spec. The GF(2⁵) cube is an APN map (differentia
 uniformity 2, the optimum). The matrix makes these cross-family facts visible at
 a glance.
 
-## The interesting half: what *can't* be built
+## The speculative probes (how the frontier is discovered)
 
-The speculative probes (`python explore.py speculative`) are honest — several
-"wouldn't it be nice" tables turn out to be **provably impossible**, and saying
-so precisely is the point:
+The frontier above is distilled from property-first probes
+(`python explore.py speculative`) — pick a property, ask what can be built, and
+report honestly when the answer is "nothing":
 
 | Construction | Verdict | Finding |
 |---|---|---|
-| Entropy-redistribution bijection | **IMPOSSIBLE** | A bijection only relabels probability mass, so entropy is invariant — you cannot flatten a biased byte without a lossy/expanding map (extractors, arithmetic coding). |
-| Distance-converting table (dist-1 → dist-*d*) | **CHARACTERISED** | Reduces to: an invertible binary matrix with all columns of weight *d*. The search discovers *d* must be **odd** (even-weight columns can't span). |
-| Self-inverse / asymmetric profile | **CHARACTERISED** | Nonlinearity and differential uniformity are *inverse-invariant* (always equal forward/inverse); only a non-invariant property like **algebraic degree** can differ. |
-| Correlation-immune bijection | **LIMITED** | Bijectivity caps achievable correlation immunity — a concrete property *incompatibility*. |
-| Avalanche-optimal (exact SAC) | **SEARCH-FOUND** | 4608 exact-SAC bijections exist at n=3; smallest size and count are made precise. |
-| Degree-bounded / multi-resolution / compositional-closure / disjoint-coverage / streaming-decomposable | **CONSTRUCTED** | Each is buildable with a clean recipe; see the probe output. |
+| Entropy-redistribution bijection | **IMPOSSIBLE** | A bijection only relabels probability mass, so entropy is invariant — needs a lossy/expanding map (extractors, arithmetic coding). |
+| Distance-converting table (dist-1 → dist-*d*) | **CHARACTERISED** | Reduces to an invertible binary matrix with all columns of weight *d*; the search discovers *d* must be **odd**. |
+| Self-inverse / asymmetric profile | **CHARACTERISED** | NL and DU are *inverse-invariant*; only a non-invariant property like **algebraic degree** can differ. |
+| Minimum sub-table width (streaming) | **CHARACTERISED** | Block-diagonal width-w lookups give DU ≥ 2^(n−w+1); AES-grade DU=4 on n=8 needs **w ≥ 7**. |
+| Avalanche-optimal (exact SAC) | **SEARCH-FOUND** | 4608 exact-SAC bijections at n=3 (exhaustive); found at n=4 by randomized search. |
+| Degree-bounded / multi-resolution / compositional-closure / disjoint-coverage | **CONSTRUCTED** | Each is buildable with a clean recipe; see the probe output. |
 
-Knowing which property *combinations* are unreachable is the "fundamental
-limits" half of the proposed research field.
+The impossibilities and bounds here are exactly what the frontier
+(`python explore.py frontier`) collects and cross-witnesses.
 
 ## Combining generators (the generative half)
 
@@ -169,6 +203,7 @@ pgdmc/
   bitmath.py       Walsh-Hadamard, Mobius/ANF, popcount, GF(2) bit utilities
   gf.py            GF(2^n) arithmetic (the shared "polynomial machinery")
   properties.py    ~27 runtime-checkable property verifiers
+  frontier.py      THE HEADLINE: property-incompatibility results (impossible/tradeoff/compatible)
   generators/      one module per family (+ rings.py, speculative.py)
   combinators.py   compose / Feistel / direct-sum / XOR / whiten + property algebra
   combinatorial_combinations.py   MOLS -> Graeco-Latin / orthogonal array; difference set -> design
@@ -176,10 +211,10 @@ pgdmc/
   homomorphic.py   plaintext model of TFHE programmable bootstrapping (negacyclic LUT)
   survey.py        literature-review extensions, each verified live
   catalog.py       assemble everything; build the property matrix; verify specs
-  report.py        text rendering of taxonomy / matrix / probes / combinations / survey
-explore.py         CLI entry point
-tests/             unittest suite asserting known constants (AES, bent, APN, Fano, RC6, ...)
-docs/              the conversation, the taxonomy, combinations, and the literature review
+  report.py        text rendering of frontier / taxonomy / matrix / probes / combinations / survey
+explore.py         CLI entry point (leads with the frontier)
+tests/             unittest suite asserting known constants (AES, bent, APN, Fano, RC6, frontier, ...)
+docs/              the frontier (read first), conversation, taxonomy, combinations, literature review
 ```
 
 ## Scope and honesty

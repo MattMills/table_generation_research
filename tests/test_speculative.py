@@ -57,9 +57,11 @@ class TestSpeculative(unittest.TestCase):
         r = explore_disjoint_coverage()
         self.assertEqual(r.verdict, "CONSTRUCTED")
 
-    def test_streaming_decomposable(self):
+    def test_streaming_decomposable_min_width(self):
+        # Rewritten: now derives the minimum sub-table width for a target DU.
         r = explore_streaming_decomposable()
-        self.assertEqual(r.verdict, "CONSTRUCTED")
+        self.assertEqual(r.verdict, "CHARACTERISED")
+        self.assertTrue(any("minimum block width w >= 7" in e for e in r.evidence))
 
     def test_self_inverse_nl_du_invariant(self):
         r = explore_self_inverse_asymmetric()
