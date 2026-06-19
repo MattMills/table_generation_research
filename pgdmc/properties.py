@@ -500,6 +500,107 @@ class ComplexRootOfUnity(Property):
                               f"{n} unit-modulus roots")
 
 
+class RivestBlackPermutation(Property):
+    name = "rivest-black"
+    description = "Polynomial permutes Z_2^w by the Rivest-Black coefficient test."
+
+    def applicable(self, table: Table) -> bool:
+        return "pp_mod" in table.meta
+
+    def check(self, table: Table) -> PropertyResult:
+        coeffs = table.meta["pp_mod"]["coeffs"]
+        a1 = coeffs[1] if len(coeffs) > 1 else 0
+        even = sum(coeffs[i] for i in range(2, len(coeffs), 2))
+        odd = sum(coeffs[i] for i in range(3, len(coeffs), 2))
+        conditions = (a1 % 2 == 1) and (even % 2 == 0) and (odd % 2 == 0)
+        # The theorem: conditions hold IFF the table is actually a permutation.
+        is_perm = sorted(table.data) == list(range(len(table.data)))
+        ok = conditions and is_perm and (conditions == is_perm)
+        return PropertyResult(Status.PASS if ok else Status.FAIL, None,
+                              f"a1 odd & even/odd coeff sums even = {conditions}; "
+                              f"bijection = {is_perm}")
+
+
+class CyclotomicCompressible(Property):
+    name = "cyclotomic-compressible"
+    description = "Zech table obeys Z(p*x)=p*Z(x), enabling coset compression."
+
+    def applicable(self, table: Table) -> bool:
+        return "zech" in table.meta
+
+    def check(self, table: Table) -> PropertyResult:
+        spec = table.meta["zech"]
+        m, p = spec["modulus"], spec["char"]
+        data = table.data
+        ok = True
+        for x in range(m):
+            if data[x] is None or data[x] < 0:
+                continue
+            img = data[(p * x) % m]
+            if img is None or img < 0 or img != (p * data[x]) % m:
+                ok = False
+                break
+        # number of p-cyclotomic cosets mod m -> compression ratio
+        seen = set()
+        cosets = 0
+        for x in range(m):
+            if x in seen:
+                continue
+            cosets += 1
+            y = x
+            while y not in seen:
+                seen.add(y)
+                y = (p * y) % m
+        ratio = round(m / cosets, 2)
+        return PropertyResult(Status.PASS if ok else Status.FAIL, ratio,
+                              f"{m} entries -> {cosets} cosets ({ratio}x)")
+
+
+class DistanceIncreasing(Property):
+    name = "distance-mapping"
+    description = "Maps binary inputs to permutations, conserving/increasing distance."
+
+    def applicable(self, table: Table) -> bool:
+        return "distance_map" in table.meta
+
+    def check(self, table: Table) -> PropertyResult:
+        spec = table.meta["distance_map"]
+        ins, outs = spec["inputs"], spec["outputs"]
+
+        def hd(a, b):
+            return sum(1 for x, y in zip(a, b) if x != y)
+
+        if len(set(outs)) != len(outs):
+            return PropertyResult(Status.FAIL, None, "not injective")
+        pairs = [(i, j) for i in range(len(ins)) for j in range(i + 1, len(ins))]
+        dcm = all(hd(outs[i], outs[j]) >= hd(ins[i], ins[j]) for i, j in pairs)
+        dim = all(hd(outs[i], outs[j]) > hd(ins[i], ins[j]) for i, j in pairs)
+        kind = "DIM" if dim else ("DCM" if dcm else "none")
+        return PropertyResult(Status.PASS if dcm else Status.FAIL, kind,
+                              f"{kind} (distance {'increasing' if dim else 'conserving' if dcm else 'reduced'})")
+
+
+class ThumbtackAutocorrelation(Property):
+    name = "thumbtack"
+    description = "Off-origin 2D autocorrelation is at most 1 (ideal radar/sonar)."
+
+    def applicable(self, table: Table) -> bool:
+        return "costas" in table.meta
+
+    def check(self, table: Table) -> PropertyResult:
+        p = table.meta["costas"]
+        n = len(p)
+        worst = 0
+        for dx in range(-(n - 1), n):
+            for dy in range(-(n - 1), n):
+                if dx == 0 and dy == 0:
+                    continue
+                c = sum(1 for i in range(n) if 0 <= i + dx < n and p[i + dx] - p[i] == dy)
+                worst = max(worst, c)
+        return PropertyResult(Status.PASS if worst <= 1 else Status.FAIL, worst,
+                              f"max off-origin autocorrelation {worst}")
+
+
 # Properties that make sense to run against *every* table -- the matrix columns.
 MATRIX_PROPERTIES: List[Property] = [
     Bijective(),
@@ -525,6 +626,10 @@ SPECIALISED_PROPERTIES: List[Property] = [
     OrthogonalArrayProp(),
     GraecoLatinOrthogonal(),
     TwoDesign(),
+    RivestBlackPermutation(),
+    CyclotomicCompressible(),
+    DistanceIncreasing(),
+    ThumbtackAutocorrelation(),
     DistinctEntries(),
     BitBalance(),
     RootOfUnity(),

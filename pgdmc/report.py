@@ -176,3 +176,22 @@ def render_combine() -> str:
     out.append("  Fano plane is a difference set developed under Z_7 -- combinatorial")
     out.append("  'generators' that are themselves combinations.")
     return "\n".join(out)
+
+
+def render_survey() -> str:
+    """Survey-grounded extensions: validated, extended, or newly added methods."""
+    from .survey import run_survey_extensions
+
+    out = ["SURVEY-GROUNDED EXTENSIONS (a literature review, made runnable)", ""]
+    out.append("Each method below is checked live. Relation to the project:")
+    out.append("  VALIDATES = survey confirms what we built; "
+               "EXTENDS = real version of a toy; NEW = added.")
+    out.append("")
+    for f in run_survey_extensions():
+        out.append(f"### [{f.relation}] {f.name}")
+        out.append(f"    survey section {f.section}")
+        out.append(f"    {f.summary}")
+        for e in f.evidence:
+            out.append(f"      - {e}")
+        out.append("")
+    return "\n".join(out)

@@ -98,7 +98,7 @@ GENERATORS = [
         family=Family.COMBINATORIAL,
         description="Permutation with all-distinct displacement vectors.",
         build=build_costas_array,
-        guarantees=["costas"],
+        guarantees=["costas", "thumbtack"],
         constructive=True,
         family_size=FamilySize.PARAMETRIC,
     ),

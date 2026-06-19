@@ -56,6 +56,30 @@ def build_tabulation(blocks: int = 4, seed: int = 99) -> Table:
     )
 
 
+def tabulation_4independence_failure(seed: int = 7):
+    """Demonstrate why simple tabulation hashing is 3- but not 4-independent.
+
+    Four keys forming a "rectangle" -- (a,c),(a,d),(b,c),(b,d) in two byte
+    positions -- always satisfy h(w) XOR h(x) XOR h(y) XOR h(z) = 0, because
+    each table entry appears an even number of times and cancels.  This is the
+    exact structural limit noted in the survey (Patrascu-Thorup).
+    """
+    rng = random.Random(seed)
+    t0 = [rng.getrandbits(_WORD_BITS) for _ in range(256)]
+    t1 = [rng.getrandbits(_WORD_BITS) for _ in range(256)]
+
+    def h(lo: int, hi: int) -> int:
+        return t0[lo] ^ t1[hi]
+
+    a, b, c, d = 0x11, 0x22, 0x33, 0x44
+    w, x, y, z = h(a, c), h(a, d), h(b, c), h(b, d)
+    return {
+        "keys": [(a, c), (a, d), (b, c), (b, d)],
+        "xor": w ^ x ^ y ^ z,
+        "cancels_to_zero": (w ^ x ^ y ^ z) == 0,
+    }
+
+
 GENERATORS = [
     Generator(
         name="Zobrist hashing",

@@ -7,12 +7,14 @@
     python explore.py specs        # verify each generator meets its guarantee
     python explore.py speculative  # just the speculative feasibility probes
     python explore.py combine      # combine generators into new-purpose tables
+    python explore.py literature   # survey-grounded extensions, made runnable
 
 The story, in order: (1) lay every generator from every lineage side by side,
 (2) confirm each meets the property it promises, (3) run the broadly-applicable
 properties against *all* of them to surface cross-family relationships,
 (4) flip the question around -- pick a property first and ask what can be built,
-then (5) combine generators and watch which properties are created or destroyed.
+(5) combine generators and watch which properties are created or destroyed,
+then (6) fold in methods excavated from a literature survey, each made runnable.
 """
 
 from __future__ import annotations
@@ -26,10 +28,11 @@ from pgdmc.report import (
     render_feasibility,
     render_matrix,
     render_spec_checks,
+    render_survey,
     render_taxonomy,
 )
 
-SECTIONS = ("taxonomy", "specs", "matrix", "speculative", "combine")
+SECTIONS = ("taxonomy", "specs", "matrix", "speculative", "combine", "literature")
 
 
 def _banner(title: str) -> str:
@@ -70,6 +73,11 @@ def main(argv: list[str]) -> int:
         print("Two generators in, one new-purpose table out -- and a record of")
         print("which property each combinator creates, preserves, or destroys.\n")
         print(render_combine())
+
+    if which in ("all", "literature"):
+        print(_banner("6. SURVEY-GROUNDED EXTENSIONS"))
+        print("Methods drawn from a literature review, made runnable and verified.\n")
+        print(render_survey())
 
     return 0
 

@@ -13,6 +13,7 @@ from . import (
     crypto,
     errorcorrection,
     hashing,
+    rings,
     sequence,
     speculative,
     transform,
@@ -20,6 +21,7 @@ from . import (
 
 ALL_GENERATORS = (
     algebraic.GENERATORS
+    + rings.GENERATORS
     + sequence.GENERATORS
     + transform.GENERATORS
     + crypto.GENERATORS

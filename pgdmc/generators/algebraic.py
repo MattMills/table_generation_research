@@ -58,7 +58,7 @@ def build_zech_logarithm() -> Table:
         generator="Zech logarithm",
         data=zech,
         notes="Z[i] s.t. 1+g^i=g^Z[i]; -1 marks the additive-zero case.",
-        meta={},
+        meta={"zech": {"modulus": order, "char": 2}},
     )
 
 
@@ -117,7 +117,7 @@ GENERATORS = [
         family=Family.ALGEBRAIC,
         description="Table enabling addition while staying in log representation.",
         build=build_zech_logarithm,
-        guarantees=[],
+        guarantees=["cyclotomic-compressible"],
         constructive=True,
         family_size=FamilySize.PARAMETRIC,
     ),

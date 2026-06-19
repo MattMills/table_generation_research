@@ -13,7 +13,9 @@ around to ask what *new* tables a property-first view can produce.
 
 The seed conversation is preserved in [`docs/conversation.md`](docs/conversation.md).
 A longer written treatment of the taxonomy is in [`docs/taxonomy.md`](docs/taxonomy.md),
-and the study of *combining* generators is in [`docs/combinations.md`](docs/combinations.md).
+the study of *combining* generators is in [`docs/combinations.md`](docs/combinations.md),
+and a review of existing works folded in from a literature survey is in
+[`docs/literature_review.md`](docs/literature_review.md).
 
 ## The idea in one paragraph
 
@@ -41,10 +43,10 @@ They are first-class fields on every `Generator` in the code:
 
 ## What's implemented
 
-Eight families, ~25 generators, ~20 property verifiers — all dependency-free
+Eight families, ~26 generators, ~27 property verifiers — all dependency-free
 (pure Python standard library, no numpy):
 
-- **Algebraic** — GF(2⁸) log/antilog, Zech logarithm, GF inverse map, permutation polynomial
+- **Algebraic** — GF(2⁸) log/antilog, Zech logarithm (cyclotomic-compressible), GF inverse map, permutation polynomial, RC6 ring-polynomial mixing
 - **Sequence** — maximal-length LFSR, de Bruijn sequence, Gray code
 - **Transform** — FFT twiddle factors, Walsh–Hadamard matrix, DCT matrix, NTT roots
 - **Cryptographic** — AES S-box, bent function, DES S-box (the search-found one)
@@ -54,19 +56,20 @@ Eight families, ~25 generators, ~20 property verifiers — all dependency-free
 - **Speculative** — degree-bounded, multi-resolution, and distance-converting constructions
 
 Every generator's *declared* guarantee is checked against its actual table on
-every run (31/31 verified), so the catalog is self-testing.
+every run (35/35 verified), so the catalog is self-testing.
 
 ## Run it
 
 ```bash
-python explore.py             # the whole story, in five acts
+python explore.py             # the whole story, in six acts
 python explore.py taxonomy    # the generators, grouped and annotated by axis
 python explore.py specs       # confirm each generator meets its own guarantee
 python explore.py matrix      # the cross-family property matrix (the payoff)
 python explore.py speculative # property-first feasibility probes
 python explore.py combine     # combine generators into new-purpose tables
+python explore.py literature  # survey-grounded extensions, made runnable
 
-python -m unittest discover -s tests   # 39 tests, asserting known constants
+python -m unittest discover -s tests   # 50 tests, asserting known constants
 ```
 
 ## The payoff: one matrix, opposite ends
@@ -133,6 +136,31 @@ two orthogonal **Latin squares → a Graeco-Latin square**; *k* MOLS → an
 **orthogonal array** of strength 2; a **difference set developed under Z₇ → the
 Fano plane** (the 2-(7,3,1) design). See [`docs/combinations.md`](docs/combinations.md).
 
+## Survey-grounded extensions (existing works, made runnable)
+
+`python explore.py literature` folds in methods from a literature survey of the
+field, each verified live and tagged by how it relates to the project —
+**VALIDATES** (confirms what we built), **EXTENDS** (the real version of a toy),
+or **NEW**:
+
+- **Equivalent generators** — log/antilog, Fermat x²⁵⁴, and search all produce
+  the *identical* GF(2⁸) inverse (the unique table behind tower-field S-boxes).
+- **Ring permutation polynomials** — RC6's `x(2x+1) mod 2ʷ`, with the exact
+  Rivest–Black test. (Its matrix row is a lesson: a perfect *ring* permutation
+  that is `NL=0, DU=256` — weak by GF(2) S-box metrics.)
+- **MBA obfuscation** — an identically-zero Mixed Boolean-Arithmetic expression
+  plus an inverse permutation-polynomial encode/decode pair.
+- **Homomorphic LUT (TFHE)** — a plaintext model of programmable bootstrapping;
+  the **negacyclic boundary** negates the upper half unless a padding bit is set.
+- **Distance-increasing mapping** — the real Ferreira–Swart–Vinck DIM (binary
+  words → symbol permutations), the literature framing of our distance probe.
+- **Costas thumbtack autocorrelation**, **tabulation's 4-independence failure**,
+  and **Zech cyclotomic-coset compression** (255 → 35 cosets, 7.3×).
+
+See [`docs/literature_review.md`](docs/literature_review.md), which also catalogs
+the reference-only items (Canright/Boyar–Peralta gate counts, masking, quantum
+S-boxes, circuit bootstrapping, Orbiter classification).
+
 ## Layout
 
 ```
@@ -140,15 +168,18 @@ pgdmc/
   core.py          Table / Generator / Property / Registry abstractions
   bitmath.py       Walsh-Hadamard, Mobius/ANF, popcount, GF(2) bit utilities
   gf.py            GF(2^n) arithmetic (the shared "polynomial machinery")
-  properties.py    ~22 runtime-checkable property verifiers
-  generators/      one module per family (+ speculative.py for the probes)
+  properties.py    ~27 runtime-checkable property verifiers
+  generators/      one module per family (+ rings.py, speculative.py)
   combinators.py   compose / Feistel / direct-sum / XOR / whiten + property algebra
   combinatorial_combinations.py   MOLS -> Graeco-Latin / orthogonal array; difference set -> design
+  distance_mappings.py   Ferreira-Swart-Vinck DCM/DIM (binary words -> permutations)
+  homomorphic.py   plaintext model of TFHE programmable bootstrapping (negacyclic LUT)
+  survey.py        literature-review extensions, each verified live
   catalog.py       assemble everything; build the property matrix; verify specs
-  report.py        text rendering of taxonomy / matrix / probes / combinations
+  report.py        text rendering of taxonomy / matrix / probes / combinations / survey
 explore.py         CLI entry point
-tests/             unittest suite asserting known constants (AES, bent, APN, Fano, ...)
-docs/              the seed conversation, the taxonomy, and the combinations writeup
+tests/             unittest suite asserting known constants (AES, bent, APN, Fano, RC6, ...)
+docs/              the conversation, the taxonomy, combinations, and the literature review
 ```
 
 ## Scope and honesty

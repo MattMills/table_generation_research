@@ -175,7 +175,9 @@ def explore_distance_converting() -> FeasibilityReport:
         takeaway=(
             "The vague idea becomes a clean theorem: achievable iff an invertible "
             "binary matrix has all columns of weight d, which forces d odd. The "
-            "framework turned 'I wonder if...' into a decidable spanning question."
+            "framework turned 'I wonder if...' into a decidable spanning question. "
+            "The literature's version maps to symbol permutations instead of "
+            "bit-vectors -- the DCM/DIM/DRM family (see pgdmc/distance_mappings.py)."
         ),
     )
 
